@@ -48,12 +48,9 @@ def _tpl(val):
 
 def _tpl_slugify(val):
     """Return value within ``[ ]`` if possible, else return ``None``."""
-    print("-----------------------------")
     match = _tpl_pattern_slugify.match(val)
-    print("val="+str(val))
     if match:
         m = match.groups()[0]
-        print("match="+str(m))
         return m
     else:
         return None
@@ -89,23 +86,14 @@ class URLFor(fields.Field):
         ``__init__``.
         """
         param_values = {}
-        
         for name, attr_tpl in iteritems(self.params):
             slug = False
-            print("]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
-            print("")
-            print("name=" + str(name))
-            print("attr_tpl=" + str(attr_tpl))
             attr_name = _tpl(str(attr_tpl))
-            print("----------===============attr_name="+str(attr_name))
             if attr_name is None:
                 attr_name = _tpl_slugify(str(attr_tpl))
                 slug = True
-            print("slug="+str(slug))
-            print("attr_name="+str(attr_name))
             if attr_name:
                 attribute_value = utils.get_value(attr_name, obj, default=missing)
-                print("attribute_value="+str(attribute_value))
                 if attribute_value is not missing:
                     if slug:
                         param_values[name] = slugify(attribute_value)
