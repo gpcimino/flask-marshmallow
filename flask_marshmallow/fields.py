@@ -14,6 +14,7 @@ from flask import url_for
 from werkzeug.routing import BuildError
 from marshmallow import fields, utils
 from marshmallow.compat import iteritems
+from slugify import slugify
 try:
     from marshmallow import missing
 except ImportError:  # marshmallow 1.2 support
@@ -29,6 +30,7 @@ else:  # marshmallow 2.0
 
 
 _tpl_pattern = re.compile(r'\s*<\s*(\S*)\s*>\s*')
+_tpl_pattern_slugify = re.compile(r'\s*s<\s*(\S*)\s*>\s*')
 
 __all__ = [
     'URLFor',
@@ -43,7 +45,18 @@ def _tpl(val):
     match = _tpl_pattern.match(val)
     if match:
         return match.groups()[0]
-    return None
+
+def _tpl_slugify(val):
+    """Return value within ``[ ]`` if possible, else return ``None``."""
+    print("-----------------------------")
+    match = _tpl_pattern_slugify.match(val)
+    print("val="+str(val))
+    if match:
+        m = match.groups()[0]
+        print("match="+str(m))
+        return m
+    else:
+        return None
 
 
 class URLFor(fields.Field):
@@ -76,12 +89,28 @@ class URLFor(fields.Field):
         ``__init__``.
         """
         param_values = {}
+        
         for name, attr_tpl in iteritems(self.params):
+            slug = False
+            print("]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+            print("")
+            print("name=" + str(name))
+            print("attr_tpl=" + str(attr_tpl))
             attr_name = _tpl(str(attr_tpl))
+            print("----------===============attr_name="+str(attr_name))
+            if attr_name is None:
+                attr_name = _tpl_slugify(str(attr_tpl))
+                slug = True
+            print("slug="+str(slug))
+            print("attr_name="+str(attr_name))
             if attr_name:
                 attribute_value = utils.get_value(attr_name, obj, default=missing)
+                print("attribute_value="+str(attribute_value))
                 if attribute_value is not missing:
-                    param_values[name] = attribute_value
+                    if slug:
+                        param_values[name] = slugify(attribute_value)
+                    else:
+                        param_values[name] = attribute_value
                 else:
                     err = AttributeError(
                         '{attr_name!r} is not a valid '
