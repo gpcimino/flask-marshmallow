@@ -111,7 +111,15 @@ class URLFor(fields.Field):
             else:
                 param_values[name] = attr_tpl
         try:
-            return url_for(self.endpoint, **param_values)
+            query_string = None
+            if "query_string" in param_values:
+                query_string = param_values['query_string']
+                del param_values['query_string']
+
+            url = url_for(self.endpoint, **param_values)
+            if query_string is not None and  query_string != "":
+                url += "?" + query_string
+            return url
         except BuildError as err:  # Make sure BuildErrors are raised
             if has_forced_error:
                 raise ForcedError(err)
