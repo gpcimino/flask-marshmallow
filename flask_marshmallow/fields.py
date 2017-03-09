@@ -46,6 +46,7 @@ def _tpl(val):
     if match:
         return match.groups()[0]
 
+
 def _tpl_slugify(val):
     """Return value within ``[ ]`` if possible, else return ``None``."""
     match = _tpl_pattern_slugify.match(val)
@@ -76,6 +77,7 @@ class URLFor(fields.Field):
     def __init__(self, endpoint, **kwargs):
         self.endpoint = endpoint
         self.params = kwargs
+
         fields.Field.__init__(self, **kwargs)
 
     def _format(self, val):
@@ -93,9 +95,11 @@ class URLFor(fields.Field):
                 attr_name = _tpl_slugify(str(attr_tpl))
                 slug = True
             if attr_name:
+                #is <attr_name>
                 attribute_value = utils.get_value(attr_name, obj, default=missing)
                 if attribute_value is not missing:
                     if slug:
+                        #is s<attr_name>
                         param_values[name] = slugify(attribute_value)
                     else:
                         param_values[name] = attribute_value
@@ -103,13 +107,19 @@ class URLFor(fields.Field):
                     err = AttributeError(
                         '{attr_name!r} is not a valid '
                         'attribute of {obj!r}'.format(attr_name=attr_name, obj=obj)
-                    )
+                    ) 
                     if has_forced_error:
                         raise ForcedError(err)
                     else:
                         raise err
             else:
-                param_values[name] = attr_tpl
+                #use param value passed to URLFor
+                import types
+                if isinstance(attr_tpl, types.FunctionType):
+                    #param is func, call it passing the model object (e.g sql alchemy object)
+                    param_values[name] = attr_tpl(obj)
+                else:
+                    param_values[name] = attr_tpl
         try:
             query_string = None
             if "query_string" in param_values:
