@@ -76,8 +76,11 @@ class URLFor(fields.Field):
 
     def __init__(self, endpoint, **kwargs):
         self.endpoint = endpoint
+        self._publish = None
+        if 'publish' in kwargs:
+            self._publish = kwargs['publish']
+            del kwargs['publish']
         self.params = kwargs
-
         fields.Field.__init__(self, **kwargs)
 
     def _format(self, val):
@@ -87,6 +90,8 @@ class URLFor(fields.Field):
         """Output the URL for the endpoint, given the kwargs passed to
         ``__init__``.
         """
+        if self._publish is not None and not self._publish(obj):
+            return None
         param_values = {}
         for name, attr_tpl in iteritems(self.params):
             slug = False
@@ -107,7 +112,7 @@ class URLFor(fields.Field):
                     err = AttributeError(
                         '{attr_name!r} is not a valid '
                         'attribute of {obj!r}'.format(attr_name=attr_name, obj=obj)
-                    ) 
+                    )
                     if has_forced_error:
                         raise ForcedError(err)
                     else:
@@ -127,8 +132,12 @@ class URLFor(fields.Field):
                 del param_values['query_string']
 
             url = url_for(self.endpoint, **param_values)
+
             if query_string is not None and  query_string != "":
-                url += "?" + query_string
+                if isinstance(query_string, types.FunctionType):
+                    url += "?" + query_string(obj)
+                else:
+                    url += "?" + query_string
             return url
         except BuildError as err:  # Make sure BuildErrors are raised
             if has_forced_error:
