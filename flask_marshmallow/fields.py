@@ -138,6 +138,8 @@ class URLFor(fields.Field):
                     url += "?" + query_string(obj)
                 else:
                     url += "?" + query_string
+            url = url.replace("?", "/?")
+            url = url.replace(" ", "+")
             return url
         except BuildError as err:  # Make sure BuildErrors are raised
             if has_forced_error:
